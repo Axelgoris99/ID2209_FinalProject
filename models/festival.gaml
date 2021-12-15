@@ -16,7 +16,7 @@ global
 	
 	init
 	{
-		
+		write 'test';
 		
 	}
 
