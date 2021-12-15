@@ -19,8 +19,8 @@ global
 	int nbMusicLover <- 5;
 	int nbPartyer <- 5;
 	int nbThief <- 5;
-	int nbLemmeOut <- 5 ;
-		
+	int nbLemmeOut <- 5;	
+	
 	init
 	{
 		create Bar number: nbBar;
@@ -34,9 +34,22 @@ global
 
 }
 
+//Parent of every places we're gonna create
+//Handle people going in and out
 species MeetingPlace skills:[fipa]{
-	//Parent of every places we're gonna create
-	//Handle people going in and out
+	list<Person> guests <- [];
+	
+	reflex someoneIn when: !empty(subscribe) {
+		loop s over: subscribes{
+			add s.sender to: guests;
+		}
+	}
+	
+	reflex someoneOut when: !empty(inform) {
+		loop i over: informs{
+			remove i.sender from: guests;
+		}
+	}
 }
 
 species Concert parent: MeetingPlace{
@@ -47,9 +60,12 @@ species Bar parent: MeetingPlace{
 	
 }
 
+//Parent of every type of people we're gonna create
+//Handle movement of people and basic interaction (nothing specialized here) / common attributes
 species Person skills:[moving, fipa]{
-	//Parent of every type of people we're gonna create
-	//Handle movement of people and basic interaction (nothing specialized here) / common attributes
+	reflex enterPlace{
+		
+	}
 }
 
 species Drinker parent:Person{
