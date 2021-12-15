@@ -86,14 +86,20 @@ species Bar parent: MeetingPlace{
 	rgb color <- rgb(0, 0, 255, 0.5);
 }
 
+
 //Parent of every type of people we're gonna create
 //Handle movement of people and basic interaction (nothing specialized here) / common attributes
 species Person skills:[moving, fipa]{
 	image_file icon <- nil;
 	rgb color <- rgb(0, 0, 0);
+	
 	MeetingPlace targetPlace <- nil;
 	point targetPoint <- nil;
 	float distanceToEnter <- 0.0;
+	
+	reflex decideOnAPlaceToGo when: targetPlace = nil{
+		
+	}
 	
 	reflex wanderAround when : targetPlace = nil{
 		do wander;
@@ -104,8 +110,8 @@ species Person skills:[moving, fipa]{
 		do goto target: targetPoint;
 	}
 	
-	reflex enterPlace when: targetPlace != nil{
-		
+	reflex enterPlace when: targetPlace != nil and self.location distance_to targetPoint < distanceToEnter {
+		do start_conversation to: [targetPlace] performative: 'subscribe' contents: ["enter"];
 	}
 	reflex leavePlace{
 		
@@ -118,12 +124,10 @@ species Person skills:[moving, fipa]{
 
 species Drinker parent:Person{
 	image_file icon <- image_file("../includes/drunk.png");
-
 }
 
 species MusicLover parent:Person{
 	image_file icon <- image_file("../includes/music.png");
-
 }
 
 species Partyer parent:Person{
