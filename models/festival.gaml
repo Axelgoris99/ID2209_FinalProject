@@ -128,18 +128,20 @@ species Person skills:[moving, fipa]{
 	int timeInside <- 0;
 	float chanceToLeavePlace <- 0.0;
 	
+	//When leaving the meeting place
+	bool leaving <- false;
 	
 	
 	// ==================== MOVE ==================== //
 	///When someone is wandering around and has no goal, he can decide on a place to go, taking a random place
-	reflex decideOnAPlaceToGo when: targetPlace = nil and rnd(1.0) < chanceToDecideOnAPlaceToGo {
+	reflex decideOnAPlaceToGo when: targetPoint = nil and rnd(1.0) < chanceToDecideOnAPlaceToGo {
 		targetPlace <- any(meetingPlace);
 		targetPoint <- targetPlace.location;
 		//This is to make it enter the place once he's inside the area of influence
 		distanceToEnter <- targetPlace.distanceOfInfluence;
 	}
 	
-	reflex wanderAround when : targetPlace = nil and !inPlace{
+	reflex wanderAround when : targetPoint = nil and !inPlace{
 		do wander;
 	}
 	
@@ -174,11 +176,27 @@ species Person skills:[moving, fipa]{
 	
 	// When he gets past a certain point, he'll start thinking about leaving and at one point in time, he will
 	reflex leavePlace when: inPlace and timeInside > minimumTimeInsidePlace and rnd(1.0) < chanceToLeavePlace {
+		write "Leaving after " + timeInside;
+		//He informs the bartender/else that he's leaving ! Because John is polite. Be polite. Be like John.
 		do start_conversation to: [targetPlace] performative: 'inform' contents: [leavePlace];
+		//We're looking for a new place to go and we don't want every agent to go to the same place so we're going to pick a random point outside the area of influence
+		//If it's far away enough, great, otherwise, we use this point as a direction and make the distance in this direction 1.3 times greater than the area of influence*
+		// In order to pick a different point that can be anywere
+		point newPoint <- {rnd(-1.0, 1.0), rnd(-1.0, 1.0)};
+		//Make it into a direction
+		newPoint <- newPoint / sqrt(newPoint.x*newPoint.x + newPoint.y * newPoint.y);
+		write newPoint;
+		targetPoint <- targetPlace.location + newPoint*2*targetPlace.distanceOfInfluence;
 		targetPlace <- nil;
-		targetPoint <- nil;
 		inPlace <- false;
+		leaving <- true;
 		timeInside <- 0;
+	}
+	
+	//This is to make sure that he goes out and once he's out, he starts to wander around and everything
+	reflex goOutside when: leaving and self.location distance_to targetPoint < 5.0 {
+		targetPoint <- nil;
+		leaving <- false;
 	}
 	
 	// ============== GRAPHICAL ==========
