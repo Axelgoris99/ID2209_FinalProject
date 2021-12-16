@@ -24,17 +24,22 @@ global
 	int nbConcert <- 2;
 	int nbBar <- 2;
 
-	int nbDrinker <-5;
-	int nbMusicLover <- 5;
-	int nbPartyer <- 5;
-	int nbThief <- 5;
-	int nbLemmeOut <- 5;	
+	int nbDrinker <- 1;
+	int nbMusicLover <-0;
+	int nbPartyer <- 0;
+	int nbThief <- 0;
+	int nbLemmeOut <- 0;	
+	
+	string enterPlace <- "Can I come in ? Where ?";
+	string leavePlace <- "Thanks and See ya !";
+	list<MeetingPlace> meetingPlace <- [];
 	
 	init
 	{
 		create Bar number: nbBar;
 		create Concert number: nbConcert;
-
+		meetingPlace <- list(Bar) + list(Concert);
+		
 		create Drinker number: nbDrinker;
 		create Partyer number: nbPartyer;
 		create MusicLover number: nbMusicLover;
@@ -95,13 +100,25 @@ species Person skills:[moving, fipa]{
 	
 	MeetingPlace targetPlace <- nil;
 	point targetPoint <- nil;
-	float distanceToEnter <- 0.0;
+	float distanceToEnter <- 100.0;
+	bool inPlace <- false;
 	
-	reflex decideOnAPlaceToGo when: targetPlace = nil{
-		
+	int minimumTimeInsidePlace <- rnd(10, 100);
+	int maxTimeInsidePlace <- rnd(minimumTimeInsidePlace, 3*minimumTimeInsidePlace);
+	int timeInside <- 0;
+	float chanceToLeavePlace <- 0.0;
+	
+	float chanceToDecideOnAPlaceToGo <- rnd(0.1);
+	
+	
+	reflex decideOnAPlaceToGo when: targetPlace = nil and rnd(1.0) < chanceToDecideOnAPlaceToGo {
+		targetPlace <- any(meetingPlace);
+		targetPoint <- targetPlace.location;
+		//This is to make it enter the place once he's inside the area of influence
+		distanceToEnter <- targetPlace.distanceOfInfluence;
 	}
 	
-	reflex wanderAround when : targetPlace = nil{
+	reflex wanderAround when : targetPlace = nil and !inPlace{
 		do wander;
 	}
 	
@@ -110,11 +127,24 @@ species Person skills:[moving, fipa]{
 		do goto target: targetPoint;
 	}
 	
-	reflex enterPlace when: targetPlace != nil and self.location distance_to targetPoint < distanceToEnter {
-		do start_conversation to: [targetPlace] performative: 'subscribe' contents: ["enter"];
+
+	reflex enterPlace when: targetPlace != nil and self.location distance_to targetPoint < distanceToEnter and !inPlace {
+		do start_conversation to: [targetPlace] performative: 'subscribe' contents: [enterPlace];
+		write self.name + enterPlace + targetPlace.name;
+		inPlace <- true;
 	}
-	reflex leavePlace{
-		
+	
+	reflex insidePlace when: inPlace{
+		timeInside <- timeInside + 1 ;
+		chanceToLeavePlace <- timeInside / maxTimeInsidePlace;
+	}
+	
+	reflex leavePlace when: inPlace and timeInside > minimumTimeInsidePlace and rnd(1.0) < chanceToLeavePlace {
+		do start_conversation to: [targetPlace] performative: 'inform' contents: [leavePlace];
+		targetPlace <- nil;
+		targetPoint <- nil;
+		inPlace <- false;
+		timeInside <- 0;
 	}
 	// ============== GRAPHICAL ==========
 	aspect default {		
