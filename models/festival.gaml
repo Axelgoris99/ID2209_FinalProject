@@ -21,25 +21,30 @@ model festival
 // ============= INIT ============== //
 global 
 {
+	//Places
 	int nbConcert <- 2;
 	int nbBar <- 2;
-
+	//People
 	int nbDrinker <- 1;
 	int nbMusicLover <-0;
 	int nbPartyer <- 0;
 	int nbThief <- 0;
 	int nbLemmeOut <- 0;	
-	
+	//Typical messages used for every communication by every agents
 	string enterPlace <- "Can I come in ? Where ?";
 	string leavePlace <- "Thanks and See ya !";
+	string hereIsYourPlace <- "Here is your place : ";
+	//A list of every places agents can meet
 	list<MeetingPlace> meetingPlace <- [];
 	
 	init
 	{
+		//Creation and list of every meeting place possible
 		create Bar number: nbBar;
 		create Concert number: nbConcert;
 		meetingPlace <- list(Bar) + list(Concert);
 		
+		//Creation of every person
 		create Drinker number: nbDrinker;
 		create Partyer number: nbPartyer;
 		create MusicLover number: nbMusicLover;
@@ -52,21 +57,30 @@ global
 //Parent of every places we're gonna create
 //Handle people going in and out
 species MeetingPlace skills:[fipa]{
+	// ========== ATTRIBUTES ========== //
 	image_file icon <- nil;
 	//The last float is the transparency of the place
 	rgb color <- rgb(0, 0, 0, 1);
+	//The area around the place : depends on what type of places that is
 	float distanceOfInfluence <- 0.0;
-	list<Person> guests <- [];
 	geometry areaOfInfluence <- circle(distanceOfInfluence);
+	//a list of guests
+	list<Person> guests <- [];
+	
+	
 	
 	// === MANAGE PEOPLE IN AND OUT === //
-	reflex someoneIn when: !empty(subscribe) {
+	///When someone walks in, we add him to the list of guest and we give him any place inside the area
+	reflex someoneIn when: !empty(subscribes) {
 		loop s over: subscribes{
 			add s.sender to: guests;
+			point placeForTheGuest <- any_location_in(areaOfInfluence);
+			do inform with:(message: s, contents:[hereIsYourPlace, placeForTheGuest]);
 		}
 	}
 	
-	reflex someoneOut when: !empty(inform) {
+	///When someone walks out, we remove him from the list of guests
+	reflex someoneOut when: !empty(informs) {
 		loop i over: informs{
 			remove i.sender from: guests;
 		}
@@ -80,12 +94,14 @@ species MeetingPlace skills:[fipa]{
 }
 
 species Concert parent: MeetingPlace{
+	// ========== ATTRIBUTES ========== //
 	image_file icon <- image_file("../includes/stage.png");
 	float distanceOfInfluence <- 10.0;
 	rgb color <- rgb(255, 0, 0, 0.5);
 }
 
 species Bar parent: MeetingPlace{
+	// ========== ATTRIBUTES ========== //
 	image_file icon <- image_file("../includes/pub.png");
 	float distanceOfInfluence <- 5.0;
 	rgb color <- rgb(0, 0, 255, 0.5);
@@ -95,22 +111,27 @@ species Bar parent: MeetingPlace{
 //Parent of every type of people we're gonna create
 //Handle movement of people and basic interaction (nothing specialized here) / common attributes
 species Person skills:[moving, fipa]{
+	// ========== ATTRIBUTES ========== //
 	image_file icon <- nil;
 	rgb color <- rgb(0, 0, 0);
 	
+	//When going to the meeting place
+	float chanceToDecideOnAPlaceToGo <- rnd(0.1);
 	MeetingPlace targetPlace <- nil;
 	point targetPoint <- nil;
 	float distanceToEnter <- 100.0;
 	bool inPlace <- false;
 	
+	//When inside the meeting place
 	int minimumTimeInsidePlace <- rnd(10, 100);
 	int maxTimeInsidePlace <- rnd(minimumTimeInsidePlace, 3*minimumTimeInsidePlace);
 	int timeInside <- 0;
 	float chanceToLeavePlace <- 0.0;
 	
-	float chanceToDecideOnAPlaceToGo <- rnd(0.1);
 	
 	
+	// ==================== MOVE ==================== //
+	///When someone is wandering around and has no goal, he can decide on a place to go, taking a random place
 	reflex decideOnAPlaceToGo when: targetPlace = nil and rnd(1.0) < chanceToDecideOnAPlaceToGo {
 		targetPlace <- any(meetingPlace);
 		targetPoint <- targetPlace.location;
@@ -127,18 +148,31 @@ species Person skills:[moving, fipa]{
 		do goto target: targetPoint;
 	}
 	
-
+	/// Once close enough to a place, he'll ask for a place and tell the bartender / dj that he's here because John is a safe guy. Be safe. Be like John.
 	reflex enterPlace when: targetPlace != nil and self.location distance_to targetPoint < distanceToEnter and !inPlace {
 		do start_conversation to: [targetPlace] performative: 'subscribe' contents: [enterPlace];
 		write self.name + enterPlace + targetPlace.name;
 		inPlace <- true;
 	}
 	
+	/// Once he gets an answer from the place, he can go to the specific place he's supposed to stay into
+	reflex placeToStay when: !empty(informs){
+		loop i over: informs{
+			list<unknown> info <- i.contents;
+			if(info[0] = hereIsYourPlace){
+				targetPoint <- info[1];
+			}
+		}
+	}
+	
+	/// time flies by and this increases his chances of leaving the place
 	reflex insidePlace when: inPlace{
 		timeInside <- timeInside + 1 ;
+		//Just a way to make sure he won't stay for too long
 		chanceToLeavePlace <- timeInside / maxTimeInsidePlace;
 	}
 	
+	// When he gets past a certain point, he'll start thinking about leaving and at one point in time, he will
 	reflex leavePlace when: inPlace and timeInside > minimumTimeInsidePlace and rnd(1.0) < chanceToLeavePlace {
 		do start_conversation to: [targetPlace] performative: 'inform' contents: [leavePlace];
 		targetPlace <- nil;
@@ -146,6 +180,7 @@ species Person skills:[moving, fipa]{
 		inPlace <- false;
 		timeInside <- 0;
 	}
+	
 	// ============== GRAPHICAL ==========
 	aspect default {		
 		draw icon size: 2.0;		
