@@ -22,10 +22,10 @@ model festival
 global 
 {
 	//Places
-	int nbConcert <- 2;
-	int nbBar <- 2;
+	int nbConcert <- 0;
+	int nbBar <- 1;
 	//People
-	int nbDrinker <- 1;
+	int nbDrinker <- 4;
 	int nbMusicLover <-0;
 	int nbPartyer <- 0;
 	int nbThief <- 0;
@@ -34,6 +34,10 @@ global
 	string enterPlace <- "Can I come in ? Where ?";
 	string leavePlace <- "Thanks and See ya !";
 	string hereIsYourPlace <- "Here is your place : ";
+	string gimmeSomeoneToInvite <- "I want to meet new people! Bring me someone cool !";
+	string youAreInvited <- " is inviting you ! Go thank him !";
+	
+	
 	//A list of every places agents can meet
 	list<MeetingPlace> meetingPlace <- [];
 	
@@ -86,6 +90,28 @@ species MeetingPlace skills:[fipa]{
 		}
 	}
 	
+	///Manage the guy who invited and the guy who's gonna be invited
+	reflex someoneShouldBeInvited when: !empty(cfps) {
+		loop invitation over: cfps {
+			if(length(guests) > 1){
+				write length(guests);
+				list<unknown>c <- invitation.contents;
+				Person invitedGuest <- randomGuest(invitation.sender);
+				do start_conversation to: [invitedGuest] performative: 'propose' contents: [youAreInvited, invitation.sender];
+			}
+		}
+	}
+	
+	/// Allows to pick a random guest
+	Person randomGuest(Person invitor){	
+		Person random <- any(guests);
+		//If we picked the guy who invited, then we pick another one, so on and so forth
+		loop while: invitor = random{
+			random <- any(guests);
+		}
+		return random;
+	}
+	
 	// ============== GRAPHICAL ==========
 	aspect default {
 		draw areaOfInfluence color: color;
@@ -131,7 +157,12 @@ species Person skills:[moving, fipa]{
 	//When leaving the meeting place
 	bool leaving <- false;
 	
-	
+	//Some people might want to invite multiple people because they feel very generous or very rich !
+	int nbInvite <- 0;
+	int nbInviteMax <- rnd(1,3);
+	//Because sometimes you're in the mood, sometimes, you're not. But remember. 
+	//John is always in the mood. Be in the mood. Be like John.
+	float wantToInviteSomeone <- rnd(0.0, 1.0) update: rnd(0.0, 1.0);
 	// ==================== MOVE ==================== //
 	///When someone is wandering around and has no goal, he can decide on a place to go, taking a random place
 	reflex decideOnAPlaceToGo when: targetPoint = nil and rnd(1.0) < chanceToDecideOnAPlaceToGo {
@@ -190,6 +221,7 @@ species Person skills:[moving, fipa]{
 		targetPlace <- nil;
 		inPlace <- false;
 		leaving <- true;
+		nbInvite <- 0;
 		timeInside <- 0;
 	}
 	
@@ -199,6 +231,26 @@ species Person skills:[moving, fipa]{
 		leaving <- false;
 	}
 	
+	/// This is a parent action to accept  an invitation to something
+	reflex acceptInvitationToWhatever when: !(empty(proposes)){
+		loop p over: proposes{
+			list<unknown> invitor <- p.contents;
+			Person ppl <- invitor[1];
+			do accept(ppl.location);
+		}
+	}
+	
+	///This method must be overriden depending on what is going to happen ! :D
+	action accept(point theGuyWhoInvited){
+		write "Sure, it'll be my pleasure.";
+		targetPoint <- theGuyWhoInvited + {rnd(-1,1) * rnd(0.5,1.0), rnd(-1,1) * rnd(0.5,1.0)};
+	}
+	
+	///This a general reflex to invite someone when your inside
+	reflex inviteSomeoneToWhatever when: inPlace and nbInvite < nbInviteMax and wantToInviteSomeone > 0.8 {
+		nbInvite <- nbInvite + 1;
+		do start_conversation to: [targetPlace] performative: 'cfp' contents:[gimmeSomeoneToInvite];
+	}
 	// ============== GRAPHICAL ==========
 	aspect default {		
 		draw icon size: 2.0;		
