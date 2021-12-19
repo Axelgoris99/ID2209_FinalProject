@@ -163,7 +163,6 @@ species Person skills:[moving, fipa]{
 	//Because sometimes you're in the mood, sometimes, you're not. But remember. 
 	//John is always in the mood. Be in the mood. Be like John.
 	float wantToInviteSomeone <- rnd(0.0, 1.0) update: rnd(0.0, 1.0);
-	float noisyLevel <- rnd(0,0.3);
 	// ==================== MOVE ==================== //
 	///When someone is wandering around and has no goal, he can decide on a place to go, taking a random place
 	reflex decideOnAPlaceToGo when: targetPoint = nil and rnd(1.0) < chanceToDecideOnAPlaceToGo {
@@ -241,24 +240,6 @@ species Person skills:[moving, fipa]{
 		}
 	}
 	
-	action leavePlaceAction {
-		//He informs the bartender/else that he's leaving ! Because John is polite. Be polite. Be like John.
-		do start_conversation to: [targetPlace] performative: 'inform' contents: [leavePlace];
-		//We're looking for a new place to go and we don't want every agent to go to the same place so we're going to pick a random point outside the area of influence
-		//If it's far away enough, great, otherwise, we use this point as a direction and make the distance in this direction 1.3 times greater than the area of influence*
-		// In order to pick a different point that can be anywere
-		point newPoint <- {rnd(-1.0, 1.0), rnd(-1.0, 1.0)};
-		//Make it into a direction
-		newPoint <- newPoint / sqrt(newPoint.x*newPoint.x + newPoint.y * newPoint.y);
-		write newPoint;
-		targetPoint <- targetPlace.location + newPoint*2*targetPlace.distanceOfInfluence;
-		targetPlace <- nil;
-		inPlace <- false;
-		leaving <- true;
-		nbInvite <- 0;
-		timeInside <- 0;
-	}
-	
 	///This method must be overriden depending on what is going to happen ! :D
 	action accept(point theGuyWhoInvited){
 		write "Sure, it'll be my pleasure.";
@@ -278,48 +259,6 @@ species Person skills:[moving, fipa]{
 
 species Drinker parent:Person{
 	image_file icon <- image_file("../includes/drunk.png");
-	
-	float generous <- rnd(0.4, 1.0);
-	float NoiseThreshold<- 0.5;
-	float drunk <- rnd(0,0.3);
-	
-	reflex askForFellowGuests when: inPlace {
-		
-		do start_conversation to: [targetPlace] performative: 'request'
-				contents: [hereIsYourPlace];
-
-	}
-	
-	reflex reactOnFellowGuests when: inPlace and !empty(informs) {
-		
-		loop i over: informs {
-			list<unknown> c <- i.contents;
-			write c[1];
-			
-			if(c[0] = hereIsYourPlace) {
-				do TooNoisyInTheBar guests: c[1];
-			}
-		}
-	}
-	
-	action TooNoisyInTheBar(list<Person> guests){
-		float Noisy <- 0.0;
-		
-		// calculate the total noise in the place
-		loop i over: guests {
-			write "noise level " + i.noisyLevel;
-			Noisy <- Noisy + i.noisyLevel;
-			
-		}
-		
-		Noisy <- Noisy / length(guests);
-		
-		// how drunk the person is affects their noise threshold
-		if ((NoiseThreshold+drunk) < Noisy){
-			write self.name + "It is way too noise and I'm leaving from " + targetPlace.name ;
-			do leavePlaceAction;
-		}
-	}
 }
 
 species MusicLover parent:Person{
@@ -328,7 +267,6 @@ species MusicLover parent:Person{
 
 species Partyer parent:Person{
 	image_file icon <- image_file("../includes/party.png");
-	float noisy <- 1.0;
 }
 
 species Thief parent:Person{

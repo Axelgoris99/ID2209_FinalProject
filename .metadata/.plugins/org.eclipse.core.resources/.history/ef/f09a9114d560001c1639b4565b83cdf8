@@ -294,9 +294,10 @@ species Drinker parent:Person{
 		
 		loop i over: informs {
 			list<unknown> c <- i.contents;
-			write c[1];
+			write "hej " + c[0] + " " +hereIsYourPlace ;
 			
 			if(c[0] = hereIsYourPlace) {
+				write "True";
 				do TooNoisyInTheBar guests: c[1];
 			}
 		}

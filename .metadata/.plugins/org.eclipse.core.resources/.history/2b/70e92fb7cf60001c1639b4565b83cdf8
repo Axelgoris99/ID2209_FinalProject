@@ -283,20 +283,14 @@ species Drinker parent:Person{
 	float NoiseThreshold<- 0.5;
 	float drunk <- rnd(0,0.3);
 	
-	reflex askForFellowGuests when: inPlace {
-		
-		do start_conversation to: [targetPlace] performative: 'request'
-				contents: [hereIsYourPlace];
-
-	}
-	
-	reflex reactOnFellowGuests when: inPlace and !empty(informs) {
+	reflex reactOnFellowGuests {
 		
 		loop i over: informs {
 			list<unknown> c <- i.contents;
-			write c[1];
+			write "hej " + c[0] + " " +hereIsYourPlace ;
 			
 			if(c[0] = hereIsYourPlace) {
+				write "True";
 				do TooNoisyInTheBar guests: c[1];
 			}
 		}
@@ -307,9 +301,8 @@ species Drinker parent:Person{
 		
 		// calculate the total noise in the place
 		loop i over: guests {
-			write "noise level " + i.noisyLevel;
 			Noisy <- Noisy + i.noisyLevel;
-			
+			write "noise level " + i.noisyLevel;
 		}
 		
 		Noisy <- Noisy / length(guests);
