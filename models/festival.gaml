@@ -28,7 +28,7 @@ global
 	int nbDrinker <- 4;
 	int nbMusicLover <-0;
 	int nbPartyer <- 2;
-	int nbThief <- 0;
+	int nbThief <- 2;
 	int nbLemmeOut <- 4;
 	int nbPeople <- nbDrinker +	nbMusicLover + nbPartyer + nbThief + nbLemmeOut;
 	//Typical messages used for every communication by every agents
@@ -53,9 +53,11 @@ global
 	list<MeetingPlace> meetingPlace <- [];
 	
 	float globalHappiness <- 0.0;
+	float globalHappinessStolen <- 0.0;
 	
-	reflex updateGlobalHappiness when: cycle mod 5 = 4 {
+	reflex updateGlobalHappiness when: cycle mod 20 = 4 {
 		globalHappiness <- 0.0;
+		globalHappinessStolen <- 0.0;
 		
 		loop i over: list(Drinker){
 			globalHappiness <- globalHappiness + i.happiness;
@@ -68,6 +70,7 @@ global
 		}
 		loop i over: list(Thief){
 			globalHappiness <- globalHappiness + i.happiness;
+			globalHappinessStolen <- globalHappinessStolen+ i.happinessStolen;
 		}
 		loop i over: list(LemmeOut){
 			globalHappiness <- globalHappiness + i.happiness;
@@ -75,6 +78,7 @@ global
 		
 		// calculate average happiness
 		globalHappiness <- globalHappiness /nbPeople;
+		globalHappinessStolen <- globalHappinessStolen/nbThief;
 	}
 	
 	init
@@ -109,17 +113,17 @@ species MeetingPlace skills:[fipa]{
 	string meetingPlaceType <- "";
 	
 	
-	reflex handleRequests when: !empty(requests) {
+	reflex SendInformationBasedOnRequests when: !empty(requests) {
 		
-		loop r over: requests {
-			list<unknown> c <- r.contents;
+		loop i over: requests {
+			list<unknown> c <- i.contents;
 			
 			if(c[0] = recieveMessageAboutPlace) {
 				point placeForTheGuest <- any_location_in(areaOfInfluence);
-				do inform message: r contents: [sendMessageAboutPlace, placeForTheGuest];
+				do inform message: i contents: [sendMessageAboutPlace, placeForTheGuest];
 			}
 			else if(c[0] = whoIsInHere) {
-				do inform message: r contents: [presentGuestMessage, guests];
+				do inform message: i contents: [presentGuestMessage, guests];
 			}
 		}
 	}
@@ -237,6 +241,8 @@ species Person skills:[moving, fipa]{
 	//When leaving the meeting place
 	bool leaving <- false;
 	
+	bool askForOtherGuests <- false;
+	
 	//Some people might want to invite multiple people because they feel very generous or very rich !
 	int nbInvite <- 0;
 	int nbInviteMax <- rnd(1,3);
@@ -280,6 +286,7 @@ species Person skills:[moving, fipa]{
 		do start_conversation to: [targetPlace] performative: 'subscribe' contents: [enterPlace];
 		write self.name + enterPlace + targetPlace.name;
 		inPlace <- true;
+		askForOtherGuests <- false;
 	}
 	
 	/// Once he gets an answer from the place, he can go to the specific place he's supposed to stay into
@@ -354,6 +361,13 @@ species Person skills:[moving, fipa]{
 		timeInside <- 0;
 	}
 	
+	reflex askForGuests when: inPlace and !askForOtherGuests {
+		
+		do start_conversation to: [targetPlace] performative: 'request'
+				contents: [whoIsInHere];
+		askForOtherGuests <- true;
+	}
+	
 	///This method must be overriden depending on what is going to happen ! :D
 	action accept(point theGuyWhoInvited){
 		write "Sure, it'll be my pleasure.";
@@ -381,12 +395,6 @@ species Drinker parent:Person{
 	float drunk <- rnd(0,0.2);
 	float noisyLevel <- noisyLevel + drunk;
 	
-	reflex askForGuests when: inPlace {
-		
-		do start_conversation to: [targetPlace] performative: 'request'
-				contents: [whoIsInHere];
-
-	}
 	
 	reflex reactOnGuests when: inPlace and !empty(informs) {
 		
@@ -394,29 +402,23 @@ species Drinker parent:Person{
 			list<unknown> c <- i.contents;
 			
 			if(c[0] = presentGuestMessage) {
-				do TooNoisyInTheBar guests: c[1];
+					list<Person> guests <- c[1];
+					if length(guests) >1 {
+						float Noisy <- 0.0;
+						
+						// calculate the total noise in the place
+						loop i over: guests {
+							Noisy <- Noisy + i.noisyLevel;	
+						}
+						
+						Noisy <- Noisy / length(guests);
+						// how drunk the person is affects their noise threshold
+						if ((NoiseThreshold+drunk) < Noisy){
+							write self.name + "It is way too noise and I'm leaving from " + targetPlace.name ;
+							do leavePlaceAction;
+						}
+					}
 			}
-		}
-	}
-	
-	action TooNoisyInTheBar(list<Person> guests){ // the drinker will leave the bar based on how noisy it is
-		if length(guests) >1 {
-			float Noisy <- 0.0;
-			
-			// calculate the total noise in the place
-			loop i over: guests {
-				Noisy <- Noisy + i.noisyLevel;
-				
-			}
-			
-			Noisy <- Noisy / length(guests);
-			
-			// how drunk the person is affects their noise threshold
-			if ((NoiseThreshold+drunk) < Noisy){
-				write self.name + "It is way too noise and I'm leaving from " + targetPlace.name ;
-				do leavePlaceAction;
-			}
-		
 		}
 	}
 }
@@ -462,15 +464,55 @@ species MusicLover parent:Person{
 
 species Partyer parent:Person{
 	image_file icon <- image_file("../includes/party.png");
-	float noisyLevel <- rnd(0.5,1.0);
+	float noisyLevel <- rnd(0.6,1.0);
 	float deaf <- rnd(0.3, 1.0);
 	string personType <- "Partyer";
+	
+	
 
 }
 
 species Thief parent:Person{
 	image_file icon <- image_file("../includes/thief.png");
 	string personType <- "Theif";
+	
+	float stealingSkill <- rnd(0.8,1.0);
+	float greedy <- rnd(1.0);
+	float drunk <- rnd(0.2);
+	float happinessStolen <- 0.0;
+	
+	reflex chooseWhoToStealFrom when: inPlace and !empty(informs) {
+		
+		loop i over: informs {
+			list<unknown> c <- i.contents;
+			
+			if(c[0] = presentGuestMessage) {
+					list<Person> guests <- c[1];
+					if length(guests) >1 {
+						float highestHappiness <- 0.0;
+						Person MostHappyPerson <- nil;
+						
+						// Find the most happy person in the place
+						loop i over: guests {
+							if i.happiness > highestHappiness{
+								highestHappiness <- i.happiness;
+								MostHappyPerson <- i;
+							}	
+						}
+			
+						// check if the theif succeds
+						write name + " Trying to steal happiness from " + MostHappyPerson.name;
+						if rnd(0.9)< ((stealingSkill-drunk)/2){
+							MostHappyPerson.happiness <- MostHappyPerson.happiness - (0.2*greedy);
+							happinessStolen <- happinessStolen + (0.2*greedy);
+							write name + " stole " + (0.2*greedy) + " Happiness fra " + MostHappyPerson.name;
+						}
+					}
+			}
+		}
+	}
+	
+	
 }
 
 species LemmeOut parent:Person{
@@ -479,54 +521,45 @@ species LemmeOut parent:Person{
 	float Drunk <- rnd(0.3, 1.0);
 	float Shy <- rnd(0.3, 0.8);
 	float happiness <- happiness;
+	float noisyLevel <- rnd(0.2);
 	bool Talking <- false;
 	
 	string personType <- "LemmeOut";
 	
-	reflex askForGuests when: inPlace {
-		
-		do start_conversation to: [targetPlace] performative: 'request'
-				contents: [whoIsInHere];
-
-	}
-	
-	reflex reactOnGuests when: inPlace and !empty(informs) {
+	reflex FindGuestToComplainTo when: inPlace and !empty(informs) {
 		
 		loop i over: informs {
 			list<unknown> c <- i.contents;
 			
-			if(c[0] = presentGuestMessage) {
-				do FindSomebodyWhoDoesNotWantToBeHere guests: c[1];
-			}
-		}
-	}
-	
-	action FindSomebodyWhoDoesNotWantToBeHere(list<Person> guests){
-		if length(guests) > 1 {		
-			// calculate the total noise in the place
-			float personProbTalking <- (Drunk + Grumpy) - Shy;
-			loop i over: guests {
-				if i.personType = "LemmeOut"{
-					// chekc if they are too shy to start at conversation
-					if ((personProbTalking + ((i.Drunk+i.Grumpy) - i.Shy)) > 0){
-						write name + "Do you also just hate being here " + i.name + " ?" + "yes it is an awefull festival";
-						Talking <- true;
-						//the more grumpy the people are the happineer they are talking to each other
-						happiness <- happiness + (Grumpy + i.Grumpy)/2;
+			if(c[0] = presentGuestMessage) { // find somebody who does not want to be here
+				list<Person> guests <- c[1];
+				if length(guests) > 1 {		
+					// calculate the total noise in the place
+					float personProbTalking <- (Drunk + Grumpy) - Shy;
+					loop i over: guests {
+						if i.personType = "LemmeOut"{
+							// chekc if they are too shy to start at conversation
+							if ((personProbTalking + ((i.Drunk+i.Grumpy) - i.Shy)) > 0){
+								write name + "Do you also just hate being here " + i.name + " ?" + "yes it is an awefull festival";
+								Talking <- true;
+								//the more grumpy the people are the happineer they are talking to each other
+								happiness <- happiness + (Grumpy + i.Grumpy)/2;
+							}
+						}
+						
 					}
+					Talking <- false;
 				}
-				
 			}
-			Talking <- false;
 		}
 	}
 	
 	
 	// decay happiness if we are not talking with another grumpy person
-	reflex decayHappiness when: cycle mod 40 = 4 and !Talking {
-		
-		happiness <- happiness - (happiness *0.01);
-	}	
+	//reflex decayHappiness when: cycle mod 40 = 4 and !Talking {
+	//	
+	//	happiness <- happiness - (happiness *0.01);
+	//}	
 }
 
 // ============== EXPERIMENT ============ //
@@ -547,6 +580,7 @@ experiment MyExperiment type:gui {
 		display HappinessChart {
 			chart 'Global Happiness' type: series {
 				data 'Global Happiness' value: globalHappiness color: #blue;
+				data "Happiness stolen" value: globalHappinessStolen color: #red;
 			}
 		}
 	}
