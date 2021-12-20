@@ -55,7 +55,7 @@ global
 	float globalHappiness <- 0.0;
 	float globalHappinessStolen <- 0.0;
 	
-	reflex updateGlobalHappiness when: cycle mod 20 = 4 {
+	reflex updateGlobalHappiness when: cycle mod 5 = 4 {
 		globalHappiness <- 0.0;
 		globalHappinessStolen <- 0.0;
 		
