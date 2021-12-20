@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="selection" value="informs"/>
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="false"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<list key="findhistory">
+			<item value="informs"/>
+			<item value="provideGuestListMsg"/>
+			<item value="inform"/>
+			<item value="askForGuestsMsg"/>
+			<item value="wantToInviteSomeone"/>
+			<item value="noisy"/>
+			<item value="noisyLevel"/>
+			<item value="drinker"/>
+			<item value="hereIsYourPlace"/>
+			<item value="reflex reactOnFellowGuests when: inStall and !empty(informs) {&#x0A;&#x09;&#x09;&#x0A;&#x09;&#x09;loop i over: informs {&#x0A;&#x09;&#x09;&#x09;list&lt;unknown&gt; c &lt;- i.contents;&#x0A;&#x09;&#x09;&#x09;&#x0A;&#x09;&#x09;&#x09;if(c[0] = provideGuestListMsg) {&#x0A;&#x09;&#x09;&#x09;&#x09;do leaveIfOtherGuestsAreTooNoisy guests: c[1];&#x0A;&#x09;&#x09;&#x09;}&#x0A;&#x09;&#x09;}&#x0A;&#x09;}"/>
+			<item value="guest"/>
+			<item value="leaveStallAction"/>
+			<item value="guests"/>
+		</list>
+		<list key="replacehistory">
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="799"/>
+		<item key="DIALOG_Y_ORIGIN" value="229"/>
+		<item key="DIALOG_WIDTH" value="292"/>
+		<item key="DIALOG_HEIGHT" value="402"/>
+		<item key="DIALOG_FONT_NAME" value="1|.AppleSystemUIFont|11.0|0|COCOA|1|.AppleSystemUIFont"/>
+	</section>
+</section>
