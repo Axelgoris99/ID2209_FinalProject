@@ -25,11 +25,11 @@ global
 	int nbConcert <- 1;
 	int nbBar <- 1;
 	//People
-	int nbDrinker <- 8;
-	int nbMusicLover <-8;
-	int nbPartyer <- 8;
-	int nbThief <- 4;
-	int nbLemmeOut <- 4;
+	int nbDrinker <- 12;
+	int nbMusicLover <-12;
+	int nbPartyer <- 12;
+	int nbThief <- 8;
+	int nbLemmeOut <- 8;
 	int nbPeople <- nbDrinker +	nbMusicLover + nbPartyer + nbThief + nbLemmeOut;
 	//Typical messages used for every communication by every agents
 	string enterPlace <- "Can I come in ? Where ?";
@@ -47,7 +47,6 @@ global
 	string meetingPlaceBar <- "Bar";
 	string meetingPlaceConcert  <- "Concert";
 
-	
 	
 	//A list of every places agents can meet
 	list<MeetingPlace> meetingPlace <- [];
@@ -190,7 +189,7 @@ species Concert parent: MeetingPlace{
 	list<float> musicValue <- [chill_value, rock_value, sound_value, pop_value];
 
 	
-	reflex startConcert when:time mod 40=5 {
+	reflex startConcert when:time mod 40=5 { //start at concert every 40 seconds with random values
 		chill_value <- rnd(float(1));
 		rock_value <- rnd(float(1));
 		sound_value <- rnd(float(1));
@@ -215,7 +214,6 @@ species Bar parent: MeetingPlace{
 	rgb color <- rgb(0, 0, 255, 0.5);
 	string meetingPlaceType <- meetingPlaceBar;
 	
-	
 }
 
 
@@ -239,7 +237,6 @@ species Person skills:[moving, fipa]{
 	int timeInside <- 0;
 	float chanceToLeavePlace <- 0.0;
 	
-	
 	//When leaving the meeting place
 	bool leaving <- false;
 	
@@ -257,16 +254,12 @@ species Person skills:[moving, fipa]{
 	string personType <- "";
 	float happiness <- 0.0;
 	
-	// for the lemmeout
+	// Traits used by the species to check each others scores
 	float Grumpy <- 0.0;
 	float Drunk <- 0.0;
 	float Shy <- 0.0;
-	
-	// for music lover
 	float chill <- 0.0;
 	float deaf <- 0.0;
-	
-	// for the partier
 	float noisyLevel <- rnd(0,0.3);
 	
 	
@@ -460,7 +453,7 @@ species MusicLover parent:Person{
 	bool likesMusic <- false;
 	
 	
-	reflex AskForMusicInfo when:!empty(informs){
+	reflex AskForMusicInfo when:!empty(informs){ // here we check what music is being played at the concert
 		loop i over: informs{
 			
 			list<unknown> musicValue <- i.contents;
@@ -472,6 +465,7 @@ species MusicLover parent:Person{
 				float rock_value <- musicValueList[1];
 				float sound_value <- musicValueList[2];
 				float pop_value <-musicValueList[3];
+				
 				// calculate the total music score
 				// the more def we are the less we care about the music
 				rock_value <- rock_value * (1+deaf);
@@ -482,6 +476,7 @@ species MusicLover parent:Person{
 				
 				musicScore <- (chill_preference * chill_value + rock_preference *rock_value + sound_preference * sound_value + pop_preference * pop_value) ;
 				if musicScore < musicPreference {
+					
 					// we leave the concert
 					write self.name + "The music is not good enough here and I'm leaving from " + targetPlace.name ;
 					happiness <- happiness - (happiness*0.5) ;
@@ -496,7 +491,7 @@ species MusicLover parent:Person{
 					loop i over: informs {
 						list<unknown> c <- i.contents;
 
-						if(c[0] = presentGuestMessage) { // find somebody 
+						if(c[0] = presentGuestMessage) { 
 							list<Person> guests <- c[1];
 							if length(guests) > 1 {	
 	
@@ -512,12 +507,12 @@ species MusicLover parent:Person{
 										}
 									}
 									else if i.personType = "Partyer"{
-										// chekc if they are chill enough that they want to start at conversation
+										// chekc if they are too noisy to see if we want to start a conversation with them
 										if ((chill- i.noisyLevel) > 0){
 											write name + "This is some really great music and I love to party with you "+ i.name;
 			
-											//the more chill the people are the happineer they are talking to each other
-											happiness <- happiness + (chill- i.noisyLevel)/2;
+											//the more chill we are and the less noisy the other person is the happier we will be
+											happiness <- happiness + happiness*(chill- i.noisyLevel)/2;
 										}
 									}
 									
@@ -549,7 +544,7 @@ species Partyer parent:Person{
 	
 	
 	
-	reflex AskForMusicInfo when:!empty(informs){
+	reflex AskForMusicInfo when:!empty(informs){ // here we check what music is being played at the concert
 		loop i over: informs{
 			
 			list<unknown> musicValue <- i.contents;
@@ -561,8 +556,9 @@ species Partyer parent:Person{
 				float rock_value <- musicValueList[1];
 				float sound_value <- musicValueList[2];
 				float pop_value <-musicValueList[3];
+				
 				// calculate the total music score
-				// the more def we are the less we care about the music
+				// the more deaf, drunk and noisy we are the higher the score
 				rock_value <- rock_value * (1+deaf);
 				sound_value <- sound_value * (1+deaf+noisyLevel+drunk);
 				pop_value <- pop_value * (1+deaf);
@@ -593,20 +589,20 @@ species Partyer parent:Person{
 			
 								loop i over: guests {
 									if i.personType = "MusicLover"{
-										// chekc if they are chill enough that they want to start at conversation
+										// chekc if they are deaf enough that they want to start at conversation
 										if ((deaf + i.deaf)/2 > 0.4){
 											write name + "I'm really deaf but loves to party to the music with a music lover " + i.name;
 			
-											//the more chill the people are the happineer they are talking to each other
+											//the more deaf we are the higher the score
 											happiness <- happiness + (deaf+ i.deaf)/2;
 										}
 									}
 									else if i.personType = "Partyer"{
-										// chekc if they are chill enough that they want to start at conversation
+										// the more deaf, drunk and noisy we are the higher the chance that we will start at conversation
 										if ((noisyLevel  + drunk + deaf + i.noisyLevel + i.Drunk + i.deaf) > 1.5){
 											write name + "I'm having the best party and I love to party with you "+ i.name;
 			
-											//the more chill the people are the happineer they are talking to each other
+											//the more deaf, drunk and noisy we are the higher the score
 											happiness <- happiness + (noisyLevel  + drunk + deaf + i.noisyLevel + i.Drunk + i.deaf)/2;
 										}
 									}
@@ -688,11 +684,11 @@ species LemmeOut parent:Person{
 			if(c[0] = presentGuestMessage) { // find somebody who does not want to be here
 				list<Person> guests <- c[1];
 				if length(guests) > 1 {		
-					// calculate the total noise in the place
+					// the more drunk and grumpy we are the less our shyness matters
 					float personProbTalking <- (Drunk + Grumpy) - Shy;
 					loop i over: guests {
 						if i.personType = "LemmeOut"{
-							// chekc if they are too shy to start at conversation
+							// check if they are too shy to start at conversation
 							if ((personProbTalking + ((i.Drunk+i.Grumpy) - i.Shy)) > 0){
 								write name + "Do you also just hate being here " + i.name + " ?" + "yes it is an awefull festival";
 								//the more grumpy the people are the happineer they are talking to each other
@@ -705,13 +701,6 @@ species LemmeOut parent:Person{
 			}
 		}
 	}
-	
-	
-	// decay happiness if we are not talking with another grumpy person
-	//reflex decayHappiness when: cycle mod 40 = 4 and !Talking {
-	//	
-	//	happiness <- happiness - (happiness *0.01);
-	//}	
 }
 
 // ============== EXPERIMENT ============ //
