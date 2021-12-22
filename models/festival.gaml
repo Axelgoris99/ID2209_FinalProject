@@ -29,7 +29,7 @@ global
 	int nbMusicLover <-12;
 	int nbPartyer <- 12;
 	int nbThief <- 8;
-	int nbLemmeOut <- 8;
+	int nbLemmeOut <- 10;
 	int nbPeople <- nbDrinker +	nbMusicLover + nbPartyer + nbThief + nbLemmeOut;
 	//Typical messages used for every communication by every agents
 	string enterPlace <- "Can I come in ? Where ?";
@@ -704,7 +704,6 @@ species LemmeOut parent:Person{
 }
 
 // ============== EXPERIMENT ============ //
-
 experiment MyExperiment type:gui {
 	output {
 		display myDisplay {
