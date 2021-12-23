@@ -25,11 +25,11 @@ global
 	int nbConcert <- 1;
 	int nbBar <- 1;
 	//People
-	int nbDrinker <- 0;
-	int nbMusicLover <-0;
-	int nbPartyer <- 0;
+	int nbDrinker <- 8;
+	int nbMusicLover <-8;
+	int nbPartyer <- 8;
 	int nbThief <- 8;
-	int nbLemmeOut <- 0;
+	int nbLemmeOut <- 8;
 	int nbPeople <- nbDrinker +	nbMusicLover + nbPartyer + nbThief + nbLemmeOut;
 	//Typical messages used for every communication by every agents
 	string enterPlace <- "Can I come in ? Where ?";
@@ -48,6 +48,7 @@ global
 	
 	//A list of every places agents can meet
 	list<MeetingPlace> meetingPlace <- [];
+	list<Person> person <- [];
 	
 	float globalHappiness <- 0.0;
 	float globalHappinessStolen <- 0.0;
@@ -57,7 +58,7 @@ global
 		globalHappinessStolen <- 0.0;
 		
 		
-		loop i over: list(Person){
+		loop i over: person{
 			globalHappiness <- globalHappiness + i.happiness;
 		}
 		loop i over: list(Thief){
@@ -65,7 +66,7 @@ global
 		}
 
 		// calculate average happiness
-		globalHappiness <- globalHappiness /nbPeople;
+		globalHappiness <- globalHappiness / nbPeople;
 		if nbThief > 0{
 			globalHappinessStolen <- globalHappinessStolen/nbThief;
 		}
@@ -84,6 +85,7 @@ global
 		create MusicLover number: nbMusicLover;
 		create Thief number: nbThief;
 		create LemmeOut number: nbLemmeOut;
+		person <- list(Drinker) + list(Partyer) + list(MusicLover) + list(Thief) + list(LemmeOut);
 	}
 
 }
@@ -119,7 +121,7 @@ species MeetingPlace skills:[fipa]{
 		loop s over: subscribes{
 			add s.sender to: guests;
 			point placeForTheGuest <- any_location_in(areaOfInfluence);
-			do inform with:(message: s, contents:[hereIsYourPlace, placeForTheGuest]);
+			do query with:(message: s, contents:[hereIsYourPlace, placeForTheGuest]);
 		}
 	}
 	
@@ -269,15 +271,15 @@ species Person skills:[moving, fipa]{
 	/// Once close enough to a place, he'll ask for a place and tell the bartender / dj that he's here because John is a safe guy. Be safe. Be like John.
 	reflex enterPlace when: targetPlace != nil and self.location distance_to targetPoint < distanceToEnter and !inPlace {
 		do start_conversation to: [targetPlace] performative: 'subscribe' contents: [enterPlace];
-		write self.name + enterPlace + targetPlace.name;
+		write self.name + " " + enterPlace + " " + targetPlace.name;
 		inPlace <- true;
 		askForOtherGuests <- false;
 	}
 	
 	/// Once he gets an answer from the place, he can go to the specific place he's supposed to stay into
-	reflex placeToStay when: !empty(informs){
-		loop i over: informs{
-			list<unknown> info <- i.contents;
+	reflex placeToStay when: !empty(queries){
+		loop q over: queries{
+			list<unknown> info <- q.contents;
 			if(info[0] = hereIsYourPlace){
 				targetPoint <- info[1];
 			}
@@ -293,22 +295,7 @@ species Person skills:[moving, fipa]{
 	
 	// When he gets past a certain point, he'll start thinking about leaving and at one point in time, he will
 	reflex leavePlace when: inPlace and timeInside > minimumTimeInsidePlace and rnd(1.0) < chanceToLeavePlace {
-		write "Leaving after " + timeInside;
-		//He informs the bartender/else that he's leaving ! Because John is polite. Be polite. Be like John.
-		do start_conversation to: [targetPlace] performative: 'inform' contents: [leavePlace];
-		//We're looking for a new place to go and we don't want every agent to go to the same place so we're going to pick a random point outside the area of influence
-		//If it's far away enough, great, otherwise, we use this point as a direction and make the distance in this direction 1.3 times greater than the area of influence*
-		// In order to pick a different point that can be anywere
-		point newPoint <- {rnd(-1.0, 1.0), rnd(-1.0, 1.0)};
-		//Make it into a direction
-		newPoint <- newPoint / sqrt(newPoint.x*newPoint.x + newPoint.y * newPoint.y);
-		write newPoint;
-		targetPoint <- targetPlace.location + newPoint*2*targetPlace.distanceOfInfluence;
-		targetPlace <- nil;
-		inPlace <- false;
-		leaving <- true;
-		nbInvite <- 0;
-		timeInside <- 0;
+		do leavePlaceAction;
 	}
 	
 	//This is to make sure that he goes out and once he's out, he starts to wander around and everything
@@ -326,9 +313,8 @@ species Person skills:[moving, fipa]{
 		}
 	}
 	
-	
-	
 	action leavePlaceAction {
+		write "Leaving after " + timeInside;
 		//He informs the bartender/else that he's leaving ! Because John is polite. Be polite. Be like John.
 		do start_conversation to: [targetPlace] performative: 'inform' contents: [leavePlace];
 		//We're looking for a new place to go and we don't want every agent to go to the same place so we're going to pick a random point outside the area of influence
@@ -616,22 +602,24 @@ species Thief parent:Person{
 	float happinessStolen <- 0.0;
 	
 	reflex chooseWhoToStealFrom when: inPlace and !empty(informs) {
-		
 		loop i over: informs {
 			list<unknown> c <- i.contents;
 			
 			if(c[0] = presentGuestMessage) {
 					list<Person> guests <- c[1];
+					
 					if length(guests) > 1 {
 						float highestHappiness <- 0.0;
 						Person MostHappyPerson <- nil;
 						
 						// Find the most happy person in the place
 						loop i over: guests {
-							if i.happiness > highestHappiness{
-								highestHappiness <- i.happiness;
-								MostHappyPerson <- i;
-							}	
+							if(i != self){
+								if i.happiness >= highestHappiness{
+									highestHappiness <- i.happiness;
+									MostHappyPerson <- i;
+								}	
+							}
 						}
 						
 						// check if the thief succeds
@@ -670,7 +658,7 @@ species LemmeOut parent:Person{
 					// the more drunk and grumpy we are the less our shyness matters
 					float personProbTalking <- (Drunk + Grumpy) - Shy;
 					loop i over: guests {
-						if i.personType = "LemmeOut"{
+						if (i.personType = "LemmeOut"and i != self){
 							// check if they are too shy to start at conversation
 							if ((personProbTalking + ((LemmeOut(i).Drunk+LemmeOut(i).Grumpy) - LemmeOut(i).Shy)) > 0){
 								write name + "Do you also just hate being here " + i.name + " ?" + " Yes it is an awful festival";
