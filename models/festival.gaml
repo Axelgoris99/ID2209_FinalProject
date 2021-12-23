@@ -9,12 +9,12 @@
 
 /*
  * TODO :
- * - Create People
  * - Make sure two places do not spawn at the same place
+ * DONE :
  * - Manage Enter and Leave
  * - Manage Interaction between People
  * - Create Specific Interaction between People
- * 
+ * - Create People
  */
 
 model festival
@@ -37,8 +37,6 @@ global
 	string hereIsYourPlace <- "Here is your place : ";
 	string gimmeSomeoneToInvite <- "I want to meet new people! Bring me someone cool !";
 	string youAreInvited <- " is inviting you ! Go thank him !";
-	string sendMessageAboutPlace <- "Send info about place";
-	string recieveMessageAboutPlace <- "recieve info about place";
 	string whoIsInHere <- "Who is in here";
 	string presentGuestMessage <- "the guests here are";
 	string whatIsTheMusicGenre <- "what is the music genre";
@@ -118,12 +116,7 @@ species MeetingPlace skills:[fipa]{
 		
 		loop i over: requests {
 			list<unknown> c <- i.contents;
-			
-			if(c[0] = recieveMessageAboutPlace) {
-				point placeForTheGuest <- any_location_in(areaOfInfluence);
-				do inform message: i contents: [sendMessageAboutPlace, placeForTheGuest];
-			}
-			else if(c[0] = whoIsInHere) {
+			if(c[0] = whoIsInHere) {
 				do inform message: i contents: [presentGuestMessage, guests];
 			}
 		}
@@ -255,11 +248,11 @@ species Person skills:[moving, fipa]{
 	float happiness <- 0.0;
 	
 	// Traits used by the species to check each others scores
-	float Grumpy <- 0.0;
-	float Drunk <- 0.0;
-	float Shy <- 0.0;
-	float chill <- 0.0;
-	float deaf <- 0.0;
+	//float Grumpy <- 0.0;
+	//float Drunk <- 0.0;
+	//float Shy <- 0.0;
+	//float chill <- 0.0;
+	//float deaf <- 0.0;
 	float noisyLevel <- rnd(0,0.3);
 	
 	
@@ -499,11 +492,11 @@ species MusicLover parent:Person{
 								loop i over: guests {
 									if i.personType = "MusicLover"{
 										// chekc if they are chill enough that they want to start at conversation
-										if ((chill+ i.chill)/2 > 0.4){
+										if ((chill+ MusicLover(i).chill)/2 > 0.4){
 											write name + "This is some really great music and it is nice to share it with another music lover " + i.name;
 			
 											//the more chill the people are the happineer they are talking to each other
-											happiness <- happiness + (chill+ i.chill)/2;
+											happiness <- happiness + (chill+ MusicLover(i).chill)/2;
 										}
 									}
 									else if i.personType = "Partyer"{
@@ -590,20 +583,20 @@ species Partyer parent:Person{
 								loop i over: guests {
 									if i.personType = "MusicLover"{
 										// chekc if they are deaf enough that they want to start at conversation
-										if ((deaf + i.deaf)/2 > 0.4){
+										if ((deaf + MusicLover(i).deaf)/2 > 0.4){
 											write name + "I'm really deaf but loves to party to the music with a music lover " + i.name;
 			
 											//the more deaf we are the higher the score
-											happiness <- happiness + (deaf+ i.deaf)/2;
+											happiness <- happiness + (deaf+ MusicLover(i).deaf)/2;
 										}
 									}
 									else if i.personType = "Partyer"{
 										// the more deaf, drunk and noisy we are the higher the chance that we will start at conversation
-										if ((noisyLevel  + drunk + deaf + i.noisyLevel + i.Drunk + i.deaf) > 1.5){
+										if ((noisyLevel  + drunk + deaf + i.noisyLevel + Partyer(i).drunk + Partyer(i).deaf) > 1.5){
 											write name + "I'm having the best party and I love to party with you "+ i.name;
 			
 											//the more deaf, drunk and noisy we are the higher the score
-											happiness <- happiness + (noisyLevel  + drunk + deaf + i.noisyLevel + i.Drunk + i.deaf)/2;
+											happiness <- happiness + (noisyLevel  + drunk + deaf + i.noisyLevel + Partyer(i).drunk + Partyer(i).deaf)/2;
 										}
 									}
 									
@@ -689,10 +682,10 @@ species LemmeOut parent:Person{
 					loop i over: guests {
 						if i.personType = "LemmeOut"{
 							// check if they are too shy to start at conversation
-							if ((personProbTalking + ((i.Drunk+i.Grumpy) - i.Shy)) > 0){
+							if ((personProbTalking + ((LemmeOut(i).Drunk+LemmeOut(i).Grumpy) - LemmeOut(i).Shy)) > 0){
 								write name + "Do you also just hate being here " + i.name + " ?" + "yes it is an awefull festival";
 								//the more grumpy the people are the happineer they are talking to each other
-								happiness <- happiness + (Grumpy + i.Grumpy)/2;
+								happiness <- happiness + (Grumpy + LemmeOut(i).Grumpy)/2;
 							}
 						}
 						
