@@ -347,7 +347,6 @@ species Person skills:[moving, fipa]{
 		point newPoint <- {rnd(-1.0, 1.0), rnd(-1.0, 1.0)};
 		//Make it into a direction
 		newPoint <- newPoint / sqrt(newPoint.x*newPoint.x + newPoint.y * newPoint.y);
-		write newPoint;
 		targetPoint <- targetPlace.location + newPoint*2*targetPlace.distanceOfInfluence;
 		targetPlace <- nil;
 		inPlace <- false;
@@ -373,6 +372,13 @@ species Person skills:[moving, fipa]{
 		nbInvite <- nbInvite + 1;
 		do start_conversation to: [targetPlace] performative: 'cfp' contents:[gimmeSomeoneToInvite];
 	}
+	
+	reflex adjustHappinessBetween0And1{
+		if (happiness > 1.0){ happiness <- 1.0;}
+		if(happiness < 0.0){happiness <- 0.0;}
+	}
+	
+	
 	// ============== GRAPHICAL ==========
 	aspect default {		
 		draw icon size: 2.0;		
