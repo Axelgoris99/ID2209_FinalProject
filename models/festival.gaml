@@ -25,11 +25,11 @@ global
 	int nbConcert <- 1;
 	int nbBar <- 1;
 	//People
-	int nbDrinker <- 12;
-	int nbMusicLover <-12;
-	int nbPartyer <- 12;
+	int nbDrinker <- 0;
+	int nbMusicLover <-0;
+	int nbPartyer <- 0;
 	int nbThief <- 8;
-	int nbLemmeOut <- 10;
+	int nbLemmeOut <- 0;
 	int nbPeople <- nbDrinker +	nbMusicLover + nbPartyer + nbThief + nbLemmeOut;
 	//Typical messages used for every communication by every agents
 	string enterPlace <- "Can I come in ? Where ?";
@@ -56,23 +56,14 @@ global
 		globalHappiness <- 0.0;
 		globalHappinessStolen <- 0.0;
 		
-		loop i over: list(Drinker){
-			globalHappiness <- globalHappiness + i.happiness;
-		}
-		loop i over: list(MusicLover){
-			globalHappiness <- globalHappiness + i.happiness;
-		}
-		loop i over: list(Partyer){
+		
+		loop i over: list(Person){
 			globalHappiness <- globalHappiness + i.happiness;
 		}
 		loop i over: list(Thief){
-			globalHappiness <- globalHappiness + i.happiness;
-			globalHappinessStolen <- globalHappinessStolen+ i.happinessStolen;
+			globalHappinessStolen <- globalHappinessStolen + i.happinessStolen;
 		}
-		loop i over: list(LemmeOut){
-			globalHappiness <- globalHappiness + i.happiness;
-		}
-		
+
 		// calculate average happiness
 		globalHappiness <- globalHappiness /nbPeople;
 		if nbThief > 0{
@@ -193,7 +184,6 @@ species Concert parent: MeetingPlace{
 	
 	reflex InformAboutTheConcert when: !empty(subscribes) {
 		loop s over: subscribes{
-			add s.sender to: guests;
 			do inform with:(message: s, contents:[musicInfo,musicValue]);
 		}
 	}
@@ -454,9 +444,7 @@ species MusicLover parent:Person{
 			
 			list<unknown> musicValue <- i.contents;
 			list<float> musicValueList <- musicValue[1];
-			
-			if (musicValue[0] != musicInfo){
-				do leavePlaceAction;
+		
 			if(musicValue[0] = musicInfo){
 		
 				float chill_value <- musicValueList[0];
@@ -526,7 +514,7 @@ species MusicLover parent:Person{
 	}
 }
 
-}
+
 
 species Partyer parent:Person{
 	image_file icon <- image_file("../includes/party.png");
@@ -547,7 +535,6 @@ species Partyer parent:Person{
 			
 			list<unknown> musicValue <- i.contents;
 			list<float> musicValueList <- musicValue[1];
-
 			if(musicValue[0] = musicInfo){
 		
 				float chill_value <- musicValueList[0];
@@ -635,7 +622,7 @@ species Thief parent:Person{
 			
 			if(c[0] = presentGuestMessage) {
 					list<Person> guests <- c[1];
-					if length(guests) >1 {
+					if length(guests) > 1 {
 						float highestHappiness <- 0.0;
 						Person MostHappyPerson <- nil;
 						
@@ -646,14 +633,14 @@ species Thief parent:Person{
 								MostHappyPerson <- i;
 							}	
 						}
-			
+						
 						// check if the thief succeds
 						write name + " Trying to steal happiness from " + MostHappyPerson.name;
 						if rnd(0.85)< (stealingSkill-drunk){
 							write name + " stole " + (MostHappyPerson.happiness*greedy) + " Happiness from " + MostHappyPerson.name;
 							MostHappyPerson.happiness <- MostHappyPerson.happiness - (MostHappyPerson.happiness*greedy);
 							happinessStolen <- happinessStolen + (MostHappyPerson.happiness*greedy);
-							happiness <- happinessStolen;
+							happiness <- happiness + happinessStolen/2;
 						}
 					}
 			}
@@ -672,12 +659,11 @@ species LemmeOut parent:Person{
 	float noisyLevel <- rnd(0.2);
 	
 	string personType <- "LemmeOut";
-	
+
 	reflex FindGuestToComplainTo when: inPlace and !empty(informs) {
 		
 		loop i over: informs {
 			list<unknown> c <- i.contents;
-			
 			if(c[0] = presentGuestMessage) { // find somebody who does not want to be here
 				list<Person> guests <- c[1];
 				if length(guests) > 1 {		
@@ -688,11 +674,10 @@ species LemmeOut parent:Person{
 							// check if they are too shy to start at conversation
 							if ((personProbTalking + ((LemmeOut(i).Drunk+LemmeOut(i).Grumpy) - LemmeOut(i).Shy)) > 0){
 								write name + "Do you also just hate being here " + i.name + " ?" + " Yes it is an awful festival";
-								//the more grumpy the people are the happineer they are talking to each other
+								//the more grumpy the people are the happier they are talking to each other
 								happiness <- happiness + (Grumpy + LemmeOut(i).Grumpy)/2;
 							}
 						}
-						
 					}
 				}
 			}
