@@ -236,7 +236,8 @@ species Person skills:[moving, fipa]{
 	int nbInviteMax <- rnd(1,3);
 	//Because sometimes you're in the mood, sometimes, you're not. But remember. 
 	//John is always in the mood. Be in the mood. Be like John.
-	float wantToInviteSomeone <- rnd(0.0, 1.0) update: rnd(0.0, 1.0);
+	float bottomValueWantToInvite <- 0.0;
+	float wantToInviteSomeone <- rnd(bottomValueWantToInvite, 1.0) update: rnd(bottomValueWantToInvite, 1.0);
 	
 	
 	// for the species interactions
@@ -402,6 +403,24 @@ species Drinker parent:Person{
 						}
 					}
 			}
+		}
+	}
+	
+	reflex raiseTheDesireToInviteSomeone{
+		if rnd(1.0) < generous{
+			bottomValueWantToInvite <- bottomValueWantToInvite + 0.1;
+		}
+		else {
+			bottomValueWantToInvite <- bottomValueWantToInvite - 0.1;
+		}
+		
+		
+		if(bottomValueWantToInvite > 1.0){
+			bottomValueWantToInvite <- 1.0;
+		}
+		
+		if(bottomValueWantToInvite < 0.0){
+			bottomValueWantToInvite <- 0.0;
 		}
 	}
 }
