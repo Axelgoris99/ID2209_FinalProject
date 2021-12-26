@@ -369,7 +369,7 @@ species Drinker parent:Person{
 	
 	//the drinkers personality traits
 	float generous <- rnd(0.4, 1.0);
-	float NoiseThreshold<- 0.5;
+	float NoiseThreshold<- 0.25;
 	float drunk <- rnd(0,0.2);
 	float noisyLevel <- noisyLevel + drunk;
 	
@@ -440,7 +440,7 @@ species MusicLover parent:Person{
 	// The personality score of the Music Lover
 	float deaf <- rnd(0.2, 0.8);
 	float chill <- rnd(0.2,0.8);
-	float musicPreference <- rnd(0.2,0.6);
+	float musicPreference <- rnd(0.6,0.9);
 
 	
 	
@@ -525,13 +525,17 @@ species Partyer parent:Person{
 	image_file icon <- image_file("../includes/party.png");
 	string personType <- "Partyer";
 	
+	float chill_preference <- 0.0;
+	float rock_preference <- 0.0;
+	float sound_preference <- 0.0;
+	float pop_preference <- 0.0;
 	float musicScore <- 0.0;
 	
 	//The partiers personality traits
 	float drunk <- rnd(0.2,0.8);
 	float noisyLevel <- rnd(0.6,1.0);
 	float deaf <- rnd(0.3, 1.0);
-	float musicPreference <- rnd(0.4,0.7);
+	float musicPreference <- rnd(0.7,0.9);
 	
 	
 	
@@ -549,14 +553,16 @@ species Partyer parent:Person{
 				
 				// calculate the total music score
 				// the more deaf, drunk and noisy we are the higher the score
-				rock_value <- rock_value * (1+deaf);
-				sound_value <- sound_value * (1+deaf+noisyLevel+drunk);
-				pop_value <- pop_value * (1+deaf);
+				chill_preference <- deaf;
+				rock_preference <- deaf;
+				sound_preference <- sound_value * (deaf+noisyLevel+drunk);
+				pop_preference <- deaf;
+			
 				
 				// The chill value of the music will be value quite low by the partier
 				chill_value <- chill_value *(noisyLevel);
 				
-				musicScore <- (chill_value + rock_value + sound_value + pop_value) ;
+				musicScore <- (chill_preference * chill_value + rock_preference *rock_value + sound_preference * sound_value + pop_preference * pop_value) ;
 				if musicScore < musicPreference {
 					// we leave the concert
 					//write self.name + ": The music and the party is not fun enough here and I'm leaving from " + targetPlace.name ;
@@ -650,6 +656,7 @@ species Thief parent:Person{
 						}
 						else{
 							//He'll give back happiness !
+							//write name + " Did not succed in stealing so I'm giving back " + (MostHappyPerson.happiness*greedy) + " Happiness to " + MostHappyPerson.name;
 							MostHappyPerson.happiness <- MostHappyPerson.happiness + (MostHappyPerson.happiness*greedy);
 							happinessStolen <- happinessStolen - (MostHappyPerson.happiness*greedy);
 							happiness <- happiness - happinessStolen/2;
