@@ -352,7 +352,9 @@ species Person skills:[moving, fipa]{
 		if(happiness < 0.0){happiness <- 0.0;}
 	}
 	
-	
+	/*reflex loseSomeHappiness{
+		happiness <- happiness * 0.99;
+	}*/
 	// ============== GRAPHICAL ==========
 	aspect default {		
 		draw icon size: 2.0;		
@@ -626,6 +628,12 @@ species Thief parent:Person{
 							MostHappyPerson.happiness <- MostHappyPerson.happiness - (MostHappyPerson.happiness*greedy);
 							happinessStolen <- happinessStolen + (MostHappyPerson.happiness*greedy);
 							happiness <- happiness + happinessStolen/2;
+						}
+						else{
+							//He'll give back happiness !
+							MostHappyPerson.happiness <- MostHappyPerson.happiness + (MostHappyPerson.happiness*greedy);
+							happinessStolen <- happinessStolen - (MostHappyPerson.happiness*greedy);
+							happiness <- happiness - happinessStolen/2;
 						}
 					}
 			}
