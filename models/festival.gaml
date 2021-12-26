@@ -425,7 +425,7 @@ species MusicLover parent:Person{
 
 	
 	
-	reflex AskForMusicInfo when:!empty(informs){ // here we check what music is being played at the concert
+	reflex CheckMusicInfo when:!empty(informs){ // here we check what music is being played at the concert
 		loop i over: informs{
 			
 			list<unknown> musicValue <- i.contents;
@@ -516,7 +516,7 @@ species Partyer parent:Person{
 	
 	
 	
-	reflex AskForMusicInfo when:!empty(informs){ // here we check what music is being played at the concert
+	reflex CheckMusicInfo when:!empty(informs){ // here we check what music is being played at the concert
 		loop i over: informs{
 			
 			list<unknown> musicValue <- i.contents;
