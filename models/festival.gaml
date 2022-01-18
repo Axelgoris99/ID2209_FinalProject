@@ -22,14 +22,14 @@ model festival
 global 
 {
 	//Places
-	int nbConcert <- 1;
-	int nbBar <- 1;
+	int nbConcert <- 2;
+	int nbBar <- 2;
 	//People
-	int nbDrinker <- 8;
-	int nbMusicLover <-8;
-	int nbPartyer <- 8;
-	int nbThief <- 8;
-	int nbLemmeOut <- 8;
+	int nbDrinker <- 10;
+	int nbMusicLover <-10;
+	int nbPartyer <- 10;
+	int nbThief <- 10;
+	int nbLemmeOut <- 10;
 	int nbPeople <- nbDrinker +	nbMusicLover + nbPartyer + nbThief + nbLemmeOut;
 	//Typical messages used for every communication by every agents
 	string enterPlace <- "Can I come in ? Where ?";
@@ -182,7 +182,7 @@ species Concert parent: MeetingPlace{
 		sound_value <- rnd(float(1));
 		pop_value <- rnd(float(1));
 		musicValue <- [chill_value, rock_value, sound_value, pop_value];
-		//write 'The time is ' + time + ' : ' + name + '  The next concert has started';
+		write 'The time is ' + time + ' : ' + name + '  The next concert has started';
 	}
 	
 	reflex InformAboutTheConcert when: !empty(subscribes) {
@@ -393,12 +393,12 @@ species Drinker parent:Person{
 						
 						// how drunk the person is affects their noise threshold
 						if ((NoiseThreshold+drunk) < Noisy){
-							//write self.name + "It is way too noise and I'm leaving from " + targetPlace.name ;
+							write self.name + "It is way too noise and I'm leaving from " + targetPlace.name ;
 							happiness <- happiness - (happiness*0.5) ;
 							do leavePlaceAction;
 						}
 						else{
-							//write self.name + "The bar is nice and quite " + targetPlace.name ;
+							write self.name + "The bar is nice and quite " + targetPlace.name ;
 							happiness <- happiness + 0.1;
 						}
 					}
@@ -469,14 +469,14 @@ species MusicLover parent:Person{
 				if musicScore < musicPreference {
 					
 					// they leave the concert
-					//write self.name + "The music is not good enough here and I'm leaving from " + targetPlace.name ;
+					write self.name + "The music is not good enough here and I'm leaving from " + targetPlace.name ;
 					happiness <- happiness - (happiness*0.5) ;
 					do leavePlaceAction;	
 				}
 				else{
 					happiness <- happiness + (musicScore);
 
-					//write self.name + " The music is amazing here " + targetPlace.name ;
+					write self.name + " The music is amazing here " + targetPlace.name ;
 					
 					// Find somebody to talk about music with
 					loop i over: informs {
@@ -491,7 +491,7 @@ species MusicLover parent:Person{
 									if i.personType = "MusicLover"{
 										// chekc if they are chill enough that they want to start at conversation
 										if ((chill+ MusicLover(i).chill)/2 > 0.4){
-											//write name + "This is some really great music and it is nice to share it with another music lover " + i.name;
+											write name + "This is some really great music and it is nice to share it with another music lover " + i.name;
 			
 											//the more chill the people are the happineer they are talking to each other
 											happiness <- happiness + (chill+ MusicLover(i).chill)/2;
@@ -500,7 +500,7 @@ species MusicLover parent:Person{
 									else if i.personType = "Partyer"{
 										// chekc if they are too noisy to see if we want to start a conversation with them
 										if ((chill- i.noisyLevel) > 0){
-											//write name + ": This is some really great music and I love to party with you "+ i.name;
+											write name + ": This is some really great music and I love to party with you "+ i.name;
 			
 											//the more chill we are and the less noisy the other person is the happier we will be
 											happiness <- happiness + happiness*(chill- i.noisyLevel)/2;
@@ -565,13 +565,13 @@ species Partyer parent:Person{
 				musicScore <- (chill_preference * chill_value + rock_preference *rock_value + sound_preference * sound_value + pop_preference * pop_value) ;
 				if musicScore < musicPreference {
 					// we leave the concert
-					//write self.name + ": The music and the party is not fun enough here and I'm leaving from " + targetPlace.name ;
+					write self.name + ": The music and the party is not fun enough here and I'm leaving from " + targetPlace.name ;
 					happiness <- happiness - (happiness*0.5) ;
 					do leavePlaceAction;	
 				}
 				else{
 					happiness <- happiness + (musicScore);
-					//write self.name + " The music amazing here " + targetPlace.name ;
+					write self.name + " The music amazing here " + targetPlace.name ;
 					
 					// Find somebody to talk about music with
 					loop i over: informs {
@@ -586,7 +586,7 @@ species Partyer parent:Person{
 									if i.personType = "MusicLover"{
 										// check if they are deaf enough so that they want to start a conversation
 										if ((deaf + MusicLover(i).deaf)/2 > 0.4){
-											//write name + "I'm really deaf but loves to party to the music with a music lover " + i.name;
+											write name + "I'm really deaf but loves to party to the music with a music lover " + i.name;
 			
 											//the more deaf they are the higher the score
 											happiness <- happiness + (deaf+ MusicLover(i).deaf)/2;
@@ -595,7 +595,7 @@ species Partyer parent:Person{
 									else if i.personType = "Partyer"{
 										// the more deaf, drunk and noisy they are the higher the chance that we will start at conversation
 										if ((noisyLevel  + drunk + deaf + i.noisyLevel + Partyer(i).drunk + Partyer(i).deaf) > 1.5){
-											//write name + "I'm having the best party and I love to party with you "+ i.name;
+											write name + "I'm having the best party and I love to party with you "+ i.name;
 			
 											//the more deaf, drunk and noisy they are the higher the score
 											happiness <- happiness + (noisyLevel  + drunk + deaf + i.noisyLevel + Partyer(i).drunk + Partyer(i).deaf)/2;
@@ -647,9 +647,9 @@ species Thief parent:Person{
 						}
 						
 						// check if the thief succeds
-						//write name + " Trying to steal happiness from " + MostHappyPerson.name;
+						write name + " Trying to steal happiness from " + MostHappyPerson.name;
 						if rnd(0.85)< (stealingSkill-drunk){
-							//write name + " stole " + (MostHappyPerson.happiness*greedy) + " Happiness from " + MostHappyPerson.name;
+							write name + " stole " + (MostHappyPerson.happiness*greedy) + " Happiness from " + MostHappyPerson.name;
 							MostHappyPerson.happiness <- MostHappyPerson.happiness - (MostHappyPerson.happiness*greedy);
 							happinessStolen <- happinessStolen + (MostHappyPerson.happiness*greedy);
 							happiness <- happiness + happinessStolen/2;
@@ -692,7 +692,7 @@ species LemmeOut parent:Person{
 						if (i.personType = "LemmeOut"and i != self){
 							// check if they are too shy to start at conversation
 							if ((personProbTalking + ((LemmeOut(i).Drunk+LemmeOut(i).Grumpy) - LemmeOut(i).Shy)) > 0){
-								//write name + "Do you also just hate being here " + i.name + " ?" + " Yes it is an awful festival";
+								write name + "Do you also just hate being here " + i.name + " ?" + " Yes it is an awful festival";
 								//the more grumpy the people are the happier they are talking to each other
 								happiness <- happiness + (Grumpy + LemmeOut(i).Grumpy)/2;
 							}
